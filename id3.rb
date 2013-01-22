@@ -44,6 +44,8 @@ class DecisionNode
 end
 
 class TerminalNode
+    attr_accessor :results
+
     def initialize(results)
         @results = results
     end
@@ -60,6 +62,8 @@ class TerminalNode
         end
     end
 end
+
+FileData = Struct.new(:features,:results)
 
 def select_best_feature(features,results)
     results_tot = Float(results.length)
@@ -110,7 +114,34 @@ def select_best_feature(features,results)
     return features[info_gains.index(info_gains.max)]
 end
 
-def build_tree(features,results,depth=0)
+def parse_file(filename)
+    filehandl = File.open(filename,"r")
+    header = filehandl.gets
+    col_name_ary = header.split(/,/)
+
+    features = Array.new
+    for i in 0..(col_name_ary.length - 2)
+        f = Column.new
+        f.name = col_name_ary[i]
+        features << f
+    end
+
+    results = Column.new
+    results.name = col_name_ary[col_name_ary.length - 1]
+
+    while(dataline = filehandl.gets)
+        data_ary = dataline.split(/,/)
+        for i in 0..(data_ary.length - 2)
+            features[i] << Float(data_ary[i])
+        end
+        results << Float(data_ary[data_ary.length - 1])
+    end
+
+    filehandl.close
+    return FileData.new(features,results)
+end
+
+def build_model(features,results,depth=0)
     if(results.same || features.length == 0)
         return TerminalNode.new(results)
     else
@@ -126,41 +157,58 @@ def build_tree(features,results,depth=0)
         end
         features.delete(f)
         node = DecisionNode.new(f.name,depth)
-        node.left = build_tree(features.clone,left_results,depth + 1)
-        node.right = build_tree(features.clone,right_results,depth + 1)
+        node.left = build_model(features.clone,left_results,depth + 1)
+        node.right = build_model(features.clone,right_results,depth + 1)
         return node
     end
 end
 
-train_filename = ARGV[0]
-train_filehandl = File.open(train_filename,"r")
-train_header = train_filehandl.gets
-col_name_ary = train_header.split(/,/)
-
-features = Array.new
-for i in 0..(col_name_ary.length - 2)
-    f = Column.new
-    f.name = col_name_ary[i]
-    features << f
-end
-
-results = Column.new
-results.name = col_name_ary[col_name_ary.length - 1]
-
-while(train_dataline = train_filehandl.gets)
-    data_ary = train_dataline.split(/,/)
-    for i in 0..(data_ary.length - 2)
-        features[i] << Float(data_ary[i])
+def test_model(features,results,model)
+    if(model.class == TerminalNode)
+        if(model.results.same)
+            call = model.results[0]
+            miscalls = results.length - results.count(call)
+        else
+            puts "ERROR"
+        end
+        return miscalls
+    else
+        cur_f_name = model.name
+        cur_f = nil
+        features.each { |f|
+            if(f.name == cur_f_name)
+                cur_f = f
+                break
+            end
+        }
+        left_results = Array.new
+        right_results = Array.new
+        for i in 0..(results.length - 1)
+            if(cur_f[i] == 1)
+                left_results << results[i]
+            else
+                right_results << results[i]
+            end
+        end
+        features.delete(cur_f)
+        left_miscalls = test_model(features.clone,left_results,model.left)
+        right_miscalls = test_model(features.clone,right_results,model.right)
+        return left_miscalls + right_miscalls
     end
-    results << Float(data_ary[data_ary.length - 1])
 end
 
-train_filehandl.close
+train_filename = ARGV[0]
+train_data = parse_file(train_filename)
+model = build_model(train_data.features,train_data.results)
 
-tree = build_tree(features,results)
-model_view = tree.to_s
+test_filename = ARGV[1]
+test_data = parse_file(test_filename)
+test_miscalls = test_model(test_data.features,test_data.results,model)
+tests = Float(test_data.results.length)
+puts "Accuracy: #{tests - test_miscalls}/#{tests} = #{(tests - test_miscalls)/tests}"
 
-model_filename = ARGV[1]
+model_view = model.to_s
+model_filename = ARGV[2]
 model_filehandl = File.open(model_filename,"w")
 model_filehandl.puts(model_view)
 model_filehandl.close
