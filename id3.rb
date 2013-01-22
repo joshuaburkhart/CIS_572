@@ -2,7 +2,7 @@
 
 #Usage: ./id3 <train> <test> <model>
 
-#Example:
+#Example: ./id3.rb data_sets1/training_set.csv model.log
 
 class Array
     def same
