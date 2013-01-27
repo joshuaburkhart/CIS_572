@@ -59,7 +59,7 @@ class TerminalNode
         if(@results.nil? || @results.length == 0)
             return nil
         elsif(@results.same)
-            return @results[0]
+            return @results[0] == LEFT_VALUE ? LEFT_VALUE : RIGHT_VALUE
         else
             results_tot = Float(@results.length)
             p1 = @results.count(LEFT_VALUE) / results_tot
@@ -70,8 +70,13 @@ class TerminalNode
     def to_s
         if(get_call.nil?)
             return "<empty>"
-        else
+        elsif(@results.same)
             return "#{get_call}"
+        else
+            results_tot = Float(@results.length)
+            p1 = @results.count(LEFT_VALUE) / results_tot
+            p0 = @results.count(RIGHT_VALUE) / results_tot
+            return p1 > p0 ? "#{LEFT_VALUE} (#{(p1*100).round}%)" : "#{RIGHT_VALUE} (#{(p0*100).round}%)"
         end 
     end
 end
@@ -127,10 +132,10 @@ def select_best_feature(features,results)
         info_gains << (prior_entropy - posterior_entropy) #should be > 0
     }
     #uncommenting the below lines will print the root-node information gains
-    puts info_gains
+    #puts info_gains
     #puts "info_gains.max #{info_gains.max}"
     #puts "info_gains.index(info_gains.max): #{info_gains.index(info_gains.max)}"
-    exit
+    #exit
     return features[info_gains.index(info_gains.max)]
 end
 
@@ -166,25 +171,31 @@ def chi_squared(c1,c2)
     p1 = 0 #LEFT_VALUE counter
     n1 = 0 #RIGHT_VALUE_ counter
     c1.each {|i|
-        if(i == LEFT_VALUE)
-            p1 += incrmnt
-        elsif(i == RIGHT_VALUE)
-            n1 += incrmnt
-        else
-            puts "ERROR, C1 HAS UNEXPECTED VALUE: #{i}"
-            exit
+        if(!i.nil?)
+            if(i == LEFT_VALUE)
+                p1 += incrmnt
+            elsif(i == RIGHT_VALUE)
+                n1 += incrmnt
+            else
+                puts "ERROR, C1 HAS UNEXPECTED VALUE: '#{i}'"
+                puts "c1: #{c1.inspect}"
+                exit
+            end
         end
     }
     p2 = 0 #LEFT_VALUE counter
     n2 = 0 #RIGHT_VALUE counter
     c2.each {|i|
-        if(i == LEFT_VALUE)
-            p2 += incrmnt
-        elsif(i == RIGHT_VALUE)
-            n1 += incrmnt
-        else
-            puts "ERROR, C2 UNEXPECTED VALUE: #{i}"
-            exit
+        if(!i.nil?)
+            if(i == LEFT_VALUE)
+                p2 += incrmnt
+            elsif(i == RIGHT_VALUE)
+                n1 += incrmnt
+            else
+                puts "ERROR, C2 UNEXPECTED VALUE: '#{i}'"
+                puts "c2: #{c2.inspect}"
+                exit
+            end
         end
     }
     p = p1 + p2
@@ -211,17 +222,33 @@ def chi_squared(c1,c2)
 end
 
 def build_model(features,results,depth=0)
-    if(results.same || features.length == 0)
+    if(results.same)
         return TerminalNode.new(results.clone)
     else
         f = select_best_feature(features.clone,results.clone)
+        left_features = Array.new
+        right_features = Array.new
+        features.each {|orig_feature|
+            left_feature = Column.new
+            right_feature = Column.new
+            left_feature.name = orig_feature.name
+            right_feature.name = orig_feature.name
+            left_features << left_feature
+            right_features << right_feature
+        }
         left_results = Array.new
         right_results = Array.new
         for i in 0..(results.length - 1)
             if(f[i] == LEFT_VALUE)
                 left_results << results[i]
+                left_features.each {|left_feature|
+                    left_feature << features.select {|e| e.name == left_feature.name}[0][i]
+                }
             elsif(f[i] == RIGHT_VALUE)
                 right_results << results[i]
+                right_features.each {|right_feature|
+                    right_feature << features.select {|e| e.name == right_feature.name}[0][i]
+                }
             else
                 puts "ERROR, UNEXPECTED VALUE: #{f[i]}"
                 exit
@@ -230,8 +257,8 @@ def build_model(features,results,depth=0)
         #features.delete(f)
         if(chi_squared(left_results,right_results) > CRITICAL_VALUE)
             node = DecisionNode.new(f.name,depth)
-            node.left = build_model(features.clone,left_results,depth + 1)
-            node.right = build_model(features.clone,right_results,depth + 1)
+            node.left = build_model(left_features.clone,left_results,depth + 1)
+            node.right = build_model(right_features.clone,right_results,depth + 1)
             return node
         else
             return TerminalNode.new(results.clone)
@@ -259,21 +286,37 @@ def test_model(features,results,model)
                 break
             end
         }
+        left_features = Array.new
+        right_features = Array.new
+        features.each {|orig_feature|
+            left_feature = Column.new
+            right_feature = Column.new
+            left_feature.name = orig_feature.name
+            right_feature.name = orig_feature.name
+            left_features << left_feature
+            right_features << right_feature
+        }
         left_results = Array.new
         right_results = Array.new
         for i in 0..(results.length - 1)
             if(cur_f[i] == LEFT_VALUE)
                 left_results << results[i]
+                left_features.each {|left_feature|
+                    left_feature << features.select {|e| e.name == left_feature.name}[0][i]
+                }
             elsif(cur_f[i] == RIGHT_VALUE)
                 right_results << results[i]
+                right_features.each {|right_feature|
+                    right_feature << features.select {|e| e.name == right_feature.name}[0][i]
+                }
             else
                 puts "ERROR, UNEXPECTED VALUE: #{cur_f[i]}"
                 exit
             end
         end
         #features.delete(cur_f)
-        left_miscalls = test_model(features.clone,left_results,model.left)
-        right_miscalls = test_model(features.clone,right_results,model.right)
+        left_miscalls = test_model(left_features.clone,left_results,model.left)
+        right_miscalls = test_model(right_features.clone,right_results,model.right)
         return left_miscalls + right_miscalls
     end
 end
