@@ -327,7 +327,7 @@ test_data = parse_file(test_filename)
 test_miscalls = test_model(test_data.features,test_data.results,model)
 tests = Float(test_data.results.length)
 #stupid rounding trick for ruby 1.8.7
-puts "Accuracy: #{tests - test_miscalls}/#{tests} = #{(((tests - test_miscalls)/tests)*1000000).round/Float(10000)}"
+puts "Accuracy: #{(((tests - test_miscalls)/tests)*10000).round/Float(100)}%"
 
 model_view = model.to_s
 model_filename = ARGV[2]
