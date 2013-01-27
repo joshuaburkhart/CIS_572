@@ -1,8 +1,8 @@
 #!/usr/bin/ruby
 
-#Usage: ./id3 <train> <test> <model>
+#Usage: ./id3_verbose_model.rb <train> <test> <model>
 
-#Example: ./id3.rb data_sets1/training_set.csv model.log
+#Example: ./id3_verbose_model.rb data_sets1/training_set.csv model.log
 
 CRITICAL_VALUE = Float(6.635)
 LEFT_VALUE = 1
@@ -72,7 +72,7 @@ class TerminalNode
         if(get_call.nil?)
             return "<empty>"
         elsif(@results.same)
-            return "#{get_call}"
+            return "#{get_call} pruned due to #{origin}"
         else
             results_tot = Float(@results.length)
             p1 = @results.count(LEFT_VALUE) / results_tot

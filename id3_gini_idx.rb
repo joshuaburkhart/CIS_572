@@ -1,10 +1,11 @@
 #!/usr/bin/ruby
 
-#Usage: ./id3 <train> <test> <model>
+#Usage: ./id3_gini_idx.rb <train> <test> <model>
 
-#Example: ./id3.rb data_sets1/training_set.csv model.log
+#Example: ./id3_gini_idx.rb data_sets1/training_set.csv model.log
 
-CRITICAL_VALUE = Float(6.635)
+CRITICAL_VALUE = 0 #Float(6.635)
+GINI_THRESHOLD = Float(0.20)
 LEFT_VALUE = 1
 RIGHT_VALUE = 0
 
@@ -72,7 +73,7 @@ class TerminalNode
         if(get_call.nil?)
             return "<empty>"
         elsif(@results.same)
-            return "#{get_call}"
+            return "#{get_call} pruned due to #{@origin}"
         else
             results_tot = Float(@results.length)
             p1 = @results.count(LEFT_VALUE) / results_tot
@@ -218,10 +219,29 @@ def chi_squared(c1,c2)
     return term1 + term2
 end
 
+def gini_idx(unsorted_ary)
+    sorted_ary = unsorted_ary.sort
+    n = Float(sorted_ary.length)
+    top_sum = Float(0)
+    for i in 1..n
+        yi = sorted_ary[i - 1]
+        top_sum += (n + 1 - i)*yi
+    end
+    bottom_sum = Float(0)
+    for i in 1..n
+        yi = sorted_ary[i - 1]
+        bottom_sum += yi
+    end
+    g = (1/n)*(n + 1 - 2*(top_sum/bottom_sum))
+    return g
+end
+
 def build_model(features,results,depth=0)
-    if(results.same)
+    gini_score = gini_idx(results)
+    if(gini_score < GINI_THRESHOLD)#results.same)
         t = TerminalNode.new(results.clone)
-        t.origin = "consensus value"
+        #t.origin = "consensus value"
+        t.origin = "gini_score reached #{gini_score}"
         return t
     else
         f = select_best_feature(features.clone,results.clone)
