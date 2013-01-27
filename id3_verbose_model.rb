@@ -50,6 +50,7 @@ end
 class TerminalNode
     attr_accessor :results
     attr_accessor :call
+    attr_accessor :origin
 
     def initialize(results)
         @results = results
@@ -76,7 +77,7 @@ class TerminalNode
             results_tot = Float(@results.length)
             p1 = @results.count(LEFT_VALUE) / results_tot
             p0 = @results.count(RIGHT_VALUE) / results_tot
-            return p1 > p0 ? "#{LEFT_VALUE}" : "#{RIGHT_VALUE}"
+            return p1 > p0 ? "#{LEFT_VALUE} (#{(p1*1000000).round/Float(10000)}%) pruned due to #{@origin}" : "#{RIGHT_VALUE} (#{(p0*1000000).round/Float(10000)}%) pruned due to #{@origin}"
         end 
     end
 end
@@ -220,6 +221,7 @@ end
 def build_model(features,results,depth=0)
     if(results.same)
         t = TerminalNode.new(results.clone)
+        t.origin = "consensus value"
         return t
     else
         f = select_best_feature(features.clone,results.clone)
@@ -259,6 +261,7 @@ def build_model(features,results,depth=0)
             return node
         else
             t = TerminalNode.new(results.clone)
+            t.origin = "X^2: #{(chi_value*10000).round/Float(10000)}"
             return t
         end
     end
