@@ -4,8 +4,6 @@
 
 #Example: ./id3_gini_idx.rb data_sets1/training_set.csv model.log
 
-CRITICAL_VALUE = 0 #Float(6.635)
-GINI_THRESHOLD = Float(0.20)
 LEFT_VALUE = 1
 RIGHT_VALUE = 0
 
@@ -86,13 +84,7 @@ end
 FileData = Struct.new(:features,:results)
 
 def select_best_feature(features,results)
-    results_tot = Float(results.length)
-    p1 = results.count(LEFT_VALUE) / results_tot
-    p0 = results.count(RIGHT_VALUE) / results_tot
-    results_1_entropy = p1 > 0 ? -p1*(Math.log(p1) / Math.log(2)) : 0
-    results_0_entropy = p0 > 0 ? -p0*(Math.log(p0) / Math.log(2)) : 0
-    prior_entropy = results_0_entropy + results_1_entropy
-    info_gains = Array.new
+    gini_coefs = Array.new
     features.each { |f|
         left_results = Array.new
         right_results = Array.new
@@ -106,39 +98,15 @@ def select_best_feature(features,results)
                 exit
             end
         end
-        left_w_entropy = 0
-        left_tot = Float(left_results.length)
-        if(left_tot > 0)
-            pleft_0 = left_results.count(0) / left_tot
-            pleft_1 = left_results.count(1) / left_tot
-            left_0_entropy = pleft_0 > 0 ? -pleft_0*(Math.log(pleft_0) / Math.log(2)) : 0
-            left_1_entropy = pleft_1 > 0 ? -pleft_1*(Math.log(pleft_1) / Math.log(2)) : 0
-            left_entropy = left_0_entropy + left_1_entropy
-            left_weight = left_tot / results_tot
-            left_w_entropy = left_weight * left_entropy
-        end
 
-        right_w_entropy = 0
-        right_tot = Float(right_results.length)
-        if(right_tot > 0)
-            pright_0 = right_results.count(0) / right_tot
-            pright_1 = right_results.count(1) / right_tot
-            right_0_entropy = pright_0 > 0 ? -pright_0*(Math.log(pright_0) / Math.log(2)) : 0
-            right_1_entropy = pright_1 > 0 ? -pright_1*(Math.log(pright_1) / Math.log(2)) : 0
-            right_entropy = right_0_entropy + right_1_entropy
-            right_weight = right_tot / results_tot
-            right_w_entropy = right_weight * right_entropy
-        end
-
-        posterior_entropy = left_w_entropy + right_w_entropy
-        info_gains << (prior_entropy - posterior_entropy) #should be > 0
+        gini_coefs << (calc_gini(left_results) + calc_gini(right_results))
     }
     #uncommenting the below lines will print the root-node information gains
-    #puts info_gains
-    #puts "info_gains.max #{info_gains.max}"
-    #puts "info_gains.index(info_gains.max): #{info_gains.index(info_gains.max)}"
+    #puts gini_coefs
+    #puts "gini_coefs.max #{gini_coefs.max}"
+    #puts "gini_coefs.index(gini_coefs.max): #{gini_coefs.index(gini_coefs.max)}"
     #exit
-    return features[info_gains.index(info_gains.max)]
+    return features[gini_coefs.index(gini_coefs.min)]
 end
 
 def parse_file(filename)
@@ -168,58 +136,7 @@ def parse_file(filename)
     return FileData.new(features,results)
 end
 
-def chi_squared(c1,c2)
-    incrmnt = Float(1)
-    p1 = Float(0) #LEFT_VALUE counter
-    n1 = Float(0) #RIGHT_VALUE_ counter
-    c1.each {|i|
-            if(i == LEFT_VALUE)
-                p1 += incrmnt
-            elsif(i == RIGHT_VALUE)
-                n1 += incrmnt
-            else
-                puts "ERROR, C1 HAS UNEXPECTED VALUE: '#{i}'"
-                puts "c1: #{c1.inspect}"
-                exit
-            end
-    }
-    p2 = Float(0) #LEFT_VALUE counter
-    n2 = Float(0) #RIGHT_VALUE counter
-    c2.each {|j|
-            if(j == LEFT_VALUE)
-                p2 += incrmnt
-            elsif(j == RIGHT_VALUE)
-                n2 += incrmnt
-            else
-                puts "ERROR, C2 UNEXPECTED VALUE: '#{j}'"
-                puts "c2: #{c2.inspect}"
-                exit
-            end
-    }
-    p = p1 + p2
-    n = n1 + n2
-    p1_prime = p * ((p1 + n1) / (p + n))
-    n1_prime = n * ((p1 + n1) / (p + n))
-    p2_prime = p * ((p2 + n2) / (p + n))
-    n2_prime = n * ((p2 + n2) / (p + n))
-    term1 = Float(0)
-    if(p1_prime > 0)
-        term1 += (p1 - p1_prime)**2 / p1_prime
-    end
-    if(n1_prime > 0)
-        term1 += (n1 - n1_prime)**2 / n1_prime
-    end
-    term2 = Float(0)
-    if(p2_prime > 0)
-        term2 += (p2 - p2_prime)**2 / p2_prime
-    end
-    if(n2_prime > 0)
-        term2 += (n2 - n2_prime)**2 / n2_prime
-    end
-    return term1 + term2
-end
-
-def gini_idx(unsorted_ary)
+def calc_gini(unsorted_ary)
     sorted_ary = unsorted_ary.sort
     n = Float(sorted_ary.length)
     top_sum = Float(0)
@@ -232,16 +149,24 @@ def gini_idx(unsorted_ary)
         yi = sorted_ary[i - 1]
         bottom_sum += yi
     end
-    g = (1/n)*(n + 1 - 2*(top_sum/bottom_sum))
+    g = nil
+    if(bottom_sum > 0)
+        g = (1/n)*(n + 1 - 2*(top_sum/bottom_sum))
+    else
+        g = (1/n)*(n + 1)
+    end
     return g
 end
 
-def build_model(features,results,depth=0)
-    gini_score = gini_idx(results)
-    if(gini_score < GINI_THRESHOLD)#results.same)
+def build_model(features,results,parent_gini_coef,depth=0)
+    gini_coef = calc_gini(results)
+    puts "new child.. with coef #{gini_coef}"
+    puts "results.same? #{results.same}"
+    puts "parent_gini_coef: #{parent_gini_coef}"
+    puts "gini_coef >= parent_gini_coef? #{gini_coef >= parent_gini_coef}"
+    if(results.same || gini_coef >= parent_gini_coef)
         t = TerminalNode.new(results.clone)
-        #t.origin = "consensus value"
-        t.origin = "gini_score reached #{gini_score}"
+        t.origin = results.same ? "consensus value" : "gini_score reached #{gini_coef}"
         return t
     else
         f = select_best_feature(features.clone,results.clone)
@@ -273,17 +198,10 @@ def build_model(features,results,depth=0)
                 exit
             end
         end
-        chi_value = chi_squared(left_results,right_results)
-        if(chi_value > CRITICAL_VALUE)
-            node = DecisionNode.new(f.name,depth)
-            node.left = build_model(left_features.clone,left_results,depth + 1)
-            node.right = build_model(right_features.clone,right_results,depth + 1)
-            return node
-        else
-            t = TerminalNode.new(results.clone)
-            t.origin = "X^2: #{(chi_value*10000).round/Float(10000)}"
-            return t
-        end
+        node = DecisionNode.new(f.name,depth)
+        node.left = build_model(left_features.clone,left_results,gini_coef,depth + 1)
+        node.right = build_model(right_features.clone,right_results,gini_coef,depth + 1)
+        return node
     end
 end
 
@@ -343,7 +261,8 @@ end
 
 train_filename = ARGV[0]
 train_data = parse_file(train_filename)
-model = build_model(train_data.features,train_data.results)
+bootstrap_gini_coef = calc_gini(train_data.results)
+model = build_model(train_data.features,train_data.results,bootstrap_gini_coef)
 
 test_filename = ARGV[1]
 test_data = parse_file(test_filename)
