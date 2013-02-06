@@ -7,6 +7,9 @@
 LEFT_VALUE = 1
 RIGHT_VALUE = 0
 
+FileData = Struct.new(:features,:results)
+AttrBeta = Struct.new(:name,:prob)
+
 class Array
     def same
         for i in 0..(self.length - 2)
@@ -15,6 +18,13 @@ class Array
             end
         end
         return true
+    end
+    def to_s
+        if(self[0].class == AttrBeta)
+            self.each {|e|
+                puts "#{e.name}#{e.prob}"
+            }
+        end
     end
 end
 
@@ -25,8 +35,6 @@ class Column < Array
         puts "#{@name}: #{self.inspect}"
     end
 end
-
-FileData = Struct.new(:features,:results)
 
 def parse_file(filename)
     filehandl = File.open(filename,"r")
@@ -56,12 +64,12 @@ def parse_file(filename)
 end
 
 def calc_logodds(features,results,beta)
-    logodds = Hash.new
+    logodds = Array.new
     basep1 = (results.count(1) + Float(beta) - 1) / (Float(results.length) + 2*Float(beta) - 2)
     basep0 = (results.count(0) + Float(beta) - 1) / (Float(results.length) + 2*Float(beta) - 2)
     blo_first_term = Math.log(basep1/basep0)
     blo_scnd_term = 0
-    features.each {|f|
+    features.each_with_index {|f,idx|
         result1_features = Array.new
         result0_features = Array.new
         for i in 0..(results.length - 1)
@@ -78,12 +86,12 @@ def calc_logodds(features,results,beta)
         p1_given_base0 = (result0_features.count(1) + Float(beta) - 1) / (Float(results.count(0)) + 2*Float(beta) - 2)
         p0_given_base1 = (result1_features.count(0) + Float(beta) - 1) / (Float(results.count(1)) + 2*Float(beta) - 2)
         p0_given_base0 = (result0_features.count(0) + Float(beta) - 1) / (Float(results.count(0)) + 2*Float(beta) - 2)
-        logodds[f.name] = (Math.log(p1_given_base1 / p1_given_base0) - Math.log(p0_given_base1 / p0_given_base0)) 
+        logodds[idx+1] = AttrBeta.new("#{f.name} ",(Math.log(p1_given_base1 / p1_given_base0) - Math.log(p0_given_base1 / p0_given_base0)))
         blo_scnd_term += Math.log(p0_given_base1/p0_given_base0)
     }
     blo = blo_first_term + blo_scnd_term
-    logodds[''] = blo
-    puts logodds.inspect
+    logodds[0] = AttrBeta.new('',blo)
+    logodds.to_s
 end
 
 def test_model(features,results,model)
