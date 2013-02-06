@@ -91,77 +91,38 @@ def calc_logodds(features,results,beta)
     }
     blo = blo_first_term + blo_scnd_term
     logodds[0] = AttrBeta.new('',blo)
-    logodds.to_s
+    return logodds
 end
 
 def test_model(features,results,model)
-    if(model.class == TerminalNode)
-        if(!model.get_call.nil?)
-            call = model.get_call
-            miscalls = results.length - results.count(call)
-        else
-            puts "ERROR TESTING MODEL"
-            puts "results: #{results.inspect}"
-            exit
-        end
-        return miscalls
-    else
-        cur_f_name = model.name
-        cur_f = nil
-        features.each { |f|
-            if(f.name == cur_f_name)
-                cur_f = f
-                break
+    test_probs = Array.new
+    blo = model.select {|e| e.name == ''}
+    for i in 0..(results.length - 1)
+        flo = 0
+        features.each {|f|
+            if(f[i] == 1)
+                fbeta = model.select {|l| l.name == "#{f.name} "}
+                flo += Float(fbeta[0].prob)
             end
-        }
-        left_features = Array.new
-        right_features = Array.new
-        features.each {|orig_feature|
-            left_feature = Column.new
-            right_feature = Column.new
-            left_feature.name = orig_feature.name
-            right_feature.name = orig_feature.name
-            left_features << left_feature
-            right_features << right_feature
-        }
-        left_results = Array.new
-        right_results = Array.new
-        for i in 0..(results.length - 1)
-            if(cur_f[i] == LEFT_VALUE)
-                left_results << results[i]
-                left_features.each {|left_feature|
-                    left_feature << features.select {|e| e.name == left_feature.name}[0][i]
-                }
-            elsif(cur_f[i] == RIGHT_VALUE)
-                right_results << results[i]
-                right_features.each {|right_feature|
-                    right_feature << features.select {|e| e.name == right_feature.name}[0][i]
-                }
-            else
-                puts "ERROR, UNEXPECTED VALUE: #{cur_f[i]}"
-                exit
-            end
-        end
-        left_miscalls = test_model(left_features.clone,left_results,model.left)
-        right_miscalls = test_model(right_features.clone,right_results,model.right)
-        return left_miscalls + right_miscalls
+        }    
+        test_probs << Float(blo[0].prob) + flo
     end
+    puts test_probs.inspect
+    exit
 end
 
 train_filename = ARGV[0]
 train_data = parse_file(train_filename)
 beta = ARGV[2]
-logodds = calc_logodds(train_data.features,train_data.results,beta)
+model = calc_logodds(train_data.features,train_data.results,beta)
 
 test_filename = ARGV[1]
 test_data = parse_file(test_filename)
-test_miscalls = test_model(test_data.features,test_data.results,logodds)
-tests = Float(test_data.results.length)
-#stupid rounding trick for ruby 1.8.7
-puts "Accuracy: #{(((tests - test_miscalls)/tests)*10000).round/Float(100)}%"
+test_probs = test_model(test_data.features,test_data.results,model)
+test_probs.to_s
 
-logodds_view = logodds.to_s
-logodds_filename = ARGV[3]
-logodds_filehandl = File.open(model_filename,"w")
-logodds_filehandl.puts(model_view)
-logodds_filehandl.close
+model_view = model.to_s
+model_filename = ARGV[3]
+model_filehandl = File.open(model_filename,"w")
+model_filehandl.puts(model_view)
+model_filehandl.close
