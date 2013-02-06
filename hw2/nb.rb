@@ -17,11 +17,14 @@ class Array
         return true
     end
     def to_s
+        out_string = ""
         if(self[0].class == AttrBeta)
             self.each {|e|
-                puts "#{e.name}#{e.prob}"
+                pretty_prob = (e.prob * 1000000).round/Float(1000000)
+                out_string = "#{out_string}#{e.name}#{pretty_prob}\n"
             }
         end
+        return out_string
     end
 end
 
@@ -105,8 +108,7 @@ def test_model(features,results,model)
         w = Float(blo[0].prob) + flo
         test_probs << 1/(1 + Math::E**-w)
     end
-    puts test_probs.inspect
-    exit
+    return test_probs
 end
 
 train_filename = ARGV[0]
@@ -117,7 +119,7 @@ model = calc_logodds(train_data.features,train_data.results,beta)
 test_filename = ARGV[1]
 test_data = parse_file(test_filename)
 test_probs = test_model(test_data.features,test_data.results,model)
-test_probs.to_s
+puts test_probs
 
 model_view = model.to_s
 model_filename = ARGV[3]
