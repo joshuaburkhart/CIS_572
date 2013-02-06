@@ -4,9 +4,6 @@
 
 #Example:
 
-LEFT_VALUE = 1
-RIGHT_VALUE = 0
-
 FileData = Struct.new(:features,:results)
 AttrBeta = Struct.new(:name,:prob)
 
@@ -105,7 +102,8 @@ def test_model(features,results,model)
                 flo += Float(fbeta[0].prob)
             end
         }    
-        test_probs << Float(blo[0].prob) + flo
+        w = Float(blo[0].prob) + flo
+        test_probs << 1/(1 + Math::E**-w)
     end
     puts test_probs.inspect
     exit
