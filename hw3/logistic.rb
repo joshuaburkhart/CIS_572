@@ -8,7 +8,7 @@ require 'matrix'
 
 FileData = Struct.new(:features,:results)
 AttrBeta = Struct.new(:name,:prob)
-EPSILON = 0.001
+EPSILON = 0.01
 
 class Array
     def same
@@ -72,10 +72,11 @@ def regress(x,y,eta,sigma)
     eta = Float(eta)
     sigma = Float(sigma)
     weights = Array.new(x.length,0.0) #initialize weights to 0
-    w0 = 1.0
+    w0 = 0.0
     weight_magnitude = 0
     old_gradient = 0
     gradient = 0
+    count = 0
     begin
         puts "weight_magnitude = #{weight_magnitude}"
         weight_magnitude = 0
@@ -109,7 +110,8 @@ def regress(x,y,eta,sigma)
         puts "gradient magnitude = #{gradient}"
         puts "gradient difference = #{(old_gradient - gradient).abs}"
         weight_magnitude = weight_magnitude**(1.0/2)
-    end while((old_gradient - gradient).abs > EPSILON)
+        count += 1
+    end while((old_gradient - gradient).abs > EPSILON && count < 100)
     return weights
 end
 
