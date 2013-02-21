@@ -83,26 +83,26 @@ def regress(x,y,eta,sigma)
         gradient = 0
         old_weights = weights.clone
         h_ary = Array.new
+        w0sum = 0
+        for j in 0..(x[0].length - 1)
+            z = w0
+            for k in 0..(x.length - 1) #calculate weightsT * X
+                z += old_weights[k]*x[k][j]
+            end
+            h_ary[j] = 1 / (1 + Math.exp(-z))
+            w0sum += (y[j] - h_ary[j])
+        end
         for i in 0..(x.length - 1) #update features
-            w0sum = 0
             wisum = 0
             for j in 0..(x[0].length - 1)
-                z = w0
-                for k in 0..(x.length - 1) #calculate weightsT * X
-                    z += old_weights[k]*x[k][j]
-                end
-                h = 1 / (1 + Math.exp(-z))
-                if(i == x.length)
-                    w0sum += (y[j] - h)
-                end
-                wisum += x[i][j]*(y[j] - h)
+                wisum += x[i][j]*(y[j] - h_ary[j])
             end
-            wisum = (wisum + old_weights[i] / sigma**2)
+            wisum = (wisum - old_weights[i] / sigma**2)
             weights[i] = old_weights[i] + eta*wisum
             weight_magnitude += weights[i]**2
             gradient += wisum**2
         end
-        w0sum = (w0sum + w0 / sigma**2)
+        w0sum = (w0sum - w0 / sigma**2)
         w0 = w0 + eta*w0sum
         gradient += w0sum**2
         gradient = gradient**(1.0/2)
