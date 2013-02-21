@@ -4,9 +4,11 @@
 
 #Example:
 
+require 'matrix'
+
 FileData = Struct.new(:features,:results)
 AttrBeta = Struct.new(:name,:prob)
-EPSILON = 0.000001
+EPSILON = 0.001
 
 class Array
     def same
@@ -64,26 +66,50 @@ def parse_file(filename)
     return FileData.new(features,results)
 end
 
+#x is in the format x[column][row] or x[feature][instance]
+#y is in the format y[row] or y[instance]
 def regress(x,y,eta,sigma)
-    g = nil
-    weights = Array.new(x.length,0)
-    weights[0] = 1
+    eta = Float(eta)
+    sigma = Float(sigma)
+    weights = Array.new(x.length,0.0) #initialize weights to 0
+    w0 = 1.0
+    weight_magnitude = 0
+    old_gradient = 0
+    gradient = 0
     begin
-        g = 0
-        for k in x.length
-            sum = 0
-            for i in x.length.length
-                z = weights[0]
-                for j in x.length
-                    z += weights[j] * x[j][i]
+        puts "weight_magnitude = #{weight_magnitude}"
+        weight_magnitude = 0
+        old_gradient = gradient
+        gradient = 0
+        old_weights = weights.clone
+        h_ary = Array.new
+        for i in 0..(x.length - 1) #update features
+            w0sum = 0
+            wisum = 0
+            for j in 0..(x[0].length - 1)
+                z = w0
+                for k in 0..(x.length - 1) #calculate weightsT * X
+                    z += old_weights[k]*x[k][j]
                 end
-                h = 1 / (1 + Math::E**(-z))
-                sum += (h - y[i]) * x[k][i] + (x[i][k] / sigma**2)
+                h = 1 / (1 + Math.exp(-z))
+                if(i == x.length)
+                    w0sum += (y[j] - h)
+                end
+                wisum += x[i][j]*(y[j] - h)
             end
-            weights[k] = weights[k] - eta * (1/x.length.length) * sum
-            g += weights[k]
+            wisum = (wisum + old_weights[i] / sigma**2)
+            weights[i] = old_weights[i] + eta*wisum
+            weight_magnitude += weights[i]**2
+            gradient += wisum**2
         end
-    end while(g > EPSILON)
+        w0sum = (w0sum + w0 / sigma**2)
+        w0 = w0 + eta*w0sum
+        gradient += w0sum**2
+        gradient = gradient**(1.0/2)
+        puts "gradient magnitude = #{gradient}"
+        puts "gradient difference = #{(old_gradient - gradient).abs}"
+        weight_magnitude = weight_magnitude**(1.0/2)
+    end while((old_gradient - gradient).abs > EPSILON)
     return weights
 end
 
@@ -108,9 +134,11 @@ train_filename = ARGV[0]
 train_data = parse_file(train_filename)
 eta = ARGV[2]
 sigma = ARGV[3]
+puts "using eta = #{eta} and sigma = #{sigma}"
 model = regress(train_data.features,train_data.results,eta,sigma)
 
 puts model
+puts model.to_s
 exit
 
 test_filename = ARGV[1]
