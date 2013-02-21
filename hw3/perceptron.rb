@@ -79,28 +79,32 @@ def perceive(x,y,eta)
     end
     count = 0
     errors = 0.0
+    w0 = BIAS
+    input = w0
+    delta = Array.new(x.length,0.0)
     begin
         errors = 0.0
-        delta = Array.new(x.length,0.0)
-        for i in 0..(x[0].length - 1) #loop over training examples
-            o = BIAS
-            for j in 0..(x.length - 1) #loop over features to calculate o
-                o += weights[j].weight*x[j][i]
+        for k in 0..(x[0].length - 1) #loop over training cases
+            input = w0
+            for i in 0..(x.length - 1) #loop over features to calculate o
+                signal = (x[i][k] > 0) ? 1 : 0
+                input += weights[i].weight*signal
             end
-            o = (o > 0.5) ? 1 : 0
-            t = y[i]
+            o = (input > 0) ? 1 : 0
+            t = (y[k] > 0) ? 1 : 0
             if(t != o)
                 errors += 1
             end
-            for k in 0..(x.length - 1) #loop over features to update
-                weights[k].weight += delta[j] + eta*(t - o)*x[k][i]
+            for i in 0..(x.length - 1) #loop over features to update
+                signal = (x[i][k] > 0) ? 1 : 0
+                weights[i].weight += eta*(t - o)*signal
             end
+            w0 += eta*(t - o)
         end
         count += 1
         puts "Errors: #{errors} (#{errors / x[0].length})"
     end while(errors > 0 && count < 100)
-    weights.w0 = BIAS
-    exit
+    weights.w0 = w0
     return weights
 end
 
