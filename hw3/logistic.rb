@@ -2,7 +2,7 @@
 
 #Usage: ./logistic.rb <train> <test> <eta> <sigma> <model>
 
-#Example:
+#Example: ./logistic.rb spambase/spambase-train.csv spambase/spambase-test.csv 0.0001 0.1 model.log
 
 require 'matrix'
 
@@ -118,20 +118,23 @@ def regress(x,y,eta,sigma)
     return weights
 end
 
-def test_model(features,results,model)
+def test_model(x,y,model)
     test_probs = Array.new
-    blo = model.select {|e| e.name == ''}
-    for i in 0..(results.length - 1)
-        flo = 0
-        features.each {|f|
-            if(f[i] == 1)
-                fbeta = model.select {|l| l.name == "#{f.name} "}
-                flo += Float(fbeta[0].prob)
-            end
-        }    
-        w = Float(blo[0].prob) + flo
-        test_probs << 1/(1 + Math::E**-w)
+    accurate_calls = 0.0
+    for i in 0..(x[0].length - 1)
+        prediction = model.w0
+        for j in 0..(x.length - 1)
+            prediction += x[j][i]*model[j].weight
+        end
+        prediction = 1 / (1 + Math.exp(-prediction))
+        test_probs << prediction
+        if(prediction > 0.5 && y[i] == 1)
+            accurate_calls += 1
+        elsif(prediction < 0.5 && y[i] == 0)
+            accurate_calls += 1
+        end
     end
+    test_probs << "Accuracy: #{(accurate_calls / x[0].length)}"
     return test_probs
 end
 
@@ -146,10 +149,8 @@ model_filename = ARGV[4]
 model_filehandl = File.open(model_filename,"w")
 model_filehandl.puts(model_view)
 model_filehandl.close
-exit
+
 test_filename = ARGV[1]
 test_data = parse_file(test_filename)
 test_probs = test_model(test_data.features,test_data.results,model)
 puts test_probs
-
-
