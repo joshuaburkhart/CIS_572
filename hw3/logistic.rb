@@ -2,7 +2,7 @@
 
 #Usage: ./logistic.rb <train> <test> <eta> <sigma> <model>
 
-#Example: ./logistic.rb spambase/spambase-train.csv spambase/spambase-test.csv 0.0001 0.1 model.log
+#Example: ./logistic.rb spambase/spambase-train.csv spambase/spambase-test.csv 0.0001 0.1 logistic_model.log
 
 require 'matrix'
 
@@ -130,7 +130,7 @@ def test_model(x,y,model)
         test_probs << prediction
         if(prediction > 0.5 && y[i] == 1)
             accurate_calls += 1
-        elsif(prediction < 0.5 && y[i] == 0)
+        elsif(prediction <= 0.5 && y[i] == 0)
             accurate_calls += 1
         end
     end
