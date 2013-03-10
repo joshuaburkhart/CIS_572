@@ -27,8 +27,10 @@ crnt_data_line = nil
 
 lagging_data_line = nil
 
-csv_filename = ARGV[0]
-data_filehandl = File.open(csv_filename,"r")
+csv_file = ARGV[0]
+data_filehandl = File.open(csv_file,"r")
+csv_file.match(/([A-Z]+.csv)/)
+csv_filename = $1
 
 while(data_line = data_filehandl.gets)
     if(data_line.match(/^[0-9]{4}-([0-9]{2})-[0-9]{2},.+,.+,.+,.+,.+,.+$/))
