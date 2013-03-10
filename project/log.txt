@@ -1,5 +1,0 @@
-2/19/2013
-
-qsubmit.rb -m Quake -p 32 "jellyfish count -m 18 -t 32 -s 10000000000 --both-strands /home13/jburkhar/research/Bradshaw/reads/kc/1130/1130_NoIndex.fastq-unshuf_1.fastq /home13/jburkhar/research/Bradshaw/reads/kc/1130/1130_NoIndex.fastq-unshuf_2.fastq -o /home13/jburkhar/research/Bradshaw/reads/kc/1130/1130_18mer"
-
-
