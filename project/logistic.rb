@@ -11,7 +11,7 @@ WeightedFeature = Struct.new(:name,:weight)
 EPSILON = 0.01
 ETA = 0.0001
 SIGMA = 0.1
-MODEL = "logistic_model.log"
+MODEL = "model_logistic_bin.log"
 
 class Array
     attr_accessor :w0
