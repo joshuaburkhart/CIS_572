@@ -119,10 +119,10 @@ end
 
 def test_model(x,y,model)
     test_probs = Array.new
-    N = x[0].length
+    n = x[0].length
     x_sum = 0.0
     y_sum = 0.0
-    for i in 0..(N - 1)
+    for i in 0..(n - 1)
         prediction = model.w0
         for j in 0..(x.length - 1)
             prediction += x[j][i]*model[j].weight
@@ -132,21 +132,21 @@ def test_model(x,y,model)
         x_sum += prediction
         y_sum += y[i]
     end
-    x_mean = x_sum / N
-    y_mean = y_sum / N
+    x_mean = x_sum / n
+    y_mean = y_sum / n
     x_var_sum = 0.0
     y_var_sum = 0.0
-    xy_covar_sum = 0.9
-    for i in 0..(N - 1)
+    xy_covar_sum = 0.0
+    for i in 0..(n - 1)
         x_error = (test_probs[i] - x_mean)
         y_error = (y[i] - y_mean)
         x_var_sum += x_error**2
         y_var_sum += y_error**2
         xy_covar_sum += x_error*y_error
     end
-    x_var = x_var_sum / N
-    y_var = y_var_sum / N
-    xy_covar = xy_covar_sum / N
+    x_var = x_var_sum / n
+    y_var = y_var_sum / n
+    xy_covar = xy_covar_sum / n
     lins_concordance = (2*xy_covar) / (x_var + y_var + (x_mean - y_mean)**2)
     puts lins_concordance
     return test_probs
