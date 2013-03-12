@@ -2,7 +2,7 @@
 
 #Usage: gen_synthetic_data.rb <file to dilute with random data>
 
-#Example:
+#Example: gen_synthetic_data.rb parsed_output_cont/2012_cont_summary.csv
 
 #NOTE: This program produces one pure and one 50% diluted.
 
