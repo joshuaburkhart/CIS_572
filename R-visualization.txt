@@ -1,0 +1,5 @@
+#simple plot.. more on http://stackoverflow.com/questions/3007120/grouped-bar-graph
+> A = read.table("project/future_quarter_prediction_by_quarter.txt")
+> data <- tapply(A$V2,A$V1,sum)
+> barplot(data)
+> barplot(data)
