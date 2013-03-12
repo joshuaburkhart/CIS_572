@@ -6,19 +6,22 @@
 
 T = "training_filename"
 V = "validation_filename"
+K = 10
 
 learner = ARGV[0]
 csv_filename = ARGV[1]
 num_rows = %x(cat #{csv_filename} | wc -l).strip.to_i
+folds = num_rows / K
 acc_sum = 0.0
-for i in 1..num_rows
-    puts "starting fold #{i} of #{num_rows}..."
+for i in 1..folds
+    puts "starting fold #{i} of #{folds}..."
     validation_filehandl = File.open(V,"w")
     training_filehandl = File.open(T,"w")
     csv_filehandl = File.open(csv_filename,"r")
     line_num = 1
     while(data_line = csv_filehandl.gets)
-        if(line_num == i)
+        if((line_num % folds) == (i % folds))
+            puts "validation including line #{line_num}"
             validation_filehandl.puts(data_line)
         else
             training_filehandl.puts(data_line)
@@ -35,4 +38,4 @@ for i in 1..num_rows
     %x(rm -f #{T} #{V})
     csv_filehandl.close
 end
-puts acc_sum / Float(num_rows)
+puts acc_sum / Float(folds)
