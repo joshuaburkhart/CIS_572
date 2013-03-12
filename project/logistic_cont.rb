@@ -158,7 +158,8 @@ def test_model(x,y,model)
     r_squared = expl_sum_sq / y_sum_sq
     #puts "R Squared: #{r_squared}"
     #puts "Lin's Concordance: #{lins_concordance}"
-    puts "#{lins_concordance}"
+    #puts "#{lins_concordance}"
+    puts "#{r_squared}"
     return test_probs
 end
 

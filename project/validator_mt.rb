@@ -16,7 +16,7 @@ folds = num_rows / K
 thread_collection = Array.new
 folds.times {|j|
     i = j+1
-    puts "starting fold #{i} of #{folds}..."
+    #puts "starting fold #{i} of #{folds}..."
     thread_collection[i] = Thread.new {
         id = Thread.current.object_id
         t = "training_mt_filename.#{id}"
