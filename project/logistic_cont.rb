@@ -155,10 +155,10 @@ def test_model(x,y,model)
     y_var = y_sum_sq / n
     xy_covar = xy_covar_sum / n
     lins_concordance = (2*xy_covar) / (x_var + y_var + (x_mean - y_mean)**2)
-    puts "Lin's Concordance: #{lins_concordance}"
-
     r_squared = expl_sum_sq / y_sum_sq
-    puts "R Squared: #{r_squared}"
+    #puts "R Squared: #{r_squared}"
+    #puts "Lin's Concordance: #{lins_concordance}"
+    puts "#{lins_concordance}"
     return test_probs
 end
 
