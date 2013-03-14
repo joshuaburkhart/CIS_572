@@ -119,47 +119,21 @@ end
 
 def test_model(x,y,model)
     test_probs = Array.new
-    n = x[0].length
-    x_sum = 0.0
-    y_sum = 0.0
-    for i in 0..(n - 1)
+    accurate_calls = 0.0 
+    for i in 0..(x[0].length - 1)
         prediction = model.w0
         for j in 0..(x.length - 1)
             prediction += x[j][i]*model[j].weight
-        end
+        end 
         prediction = 1 / (1 + Math.exp(-prediction))
         test_probs << prediction
-        x_sum += prediction
-        y_sum += y[i]
-    end
-    x_mean = x_sum / n
-    y_mean = y_sum / n
-
-    x_sum_sq = 0.0
-    y_sum_sq = 0.0
-    expl_sum_sq = 0.0
-
-    xy_covar_sum = 0.0
-    for i in 0..(n - 1)
-        x_error = (test_probs[i] - x_mean)
-        expl_error = (test_probs[i] - y_mean)
-        y_error = (y[i] - y_mean)
-
-        x_sum_sq += x_error**2
-        y_sum_sq += y_error**2
-        expl_sum_sq += expl_error**2
-
-        xy_covar_sum += x_error*y_error
-    end
-    x_var = x_sum_sq / n
-    y_var = y_sum_sq / n
-    xy_covar = xy_covar_sum / n
-    lins_concordance = (2*xy_covar) / (x_var + y_var + (x_mean - y_mean)**2)
-    r_squared = expl_sum_sq / y_sum_sq
-    #puts "R Squared: #{r_squared}"
-    #puts "Lin's Concordance: #{lins_concordance}"
-    #puts "#{lins_concordance}"
-    puts "#{r_squared}"
+        if(prediction > 0.0 && y[i] > 0.0)
+            accurate_calls += 1
+        elsif(prediction <= 0.0 && y[i] <= 0.0)
+            accurate_calls += 1
+        end 
+    end 
+    puts (accurate_calls / x[0].length)
     return test_probs
 end
 
