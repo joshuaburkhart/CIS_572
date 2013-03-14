@@ -1,5 +1,6 @@
-#simple plot.. more on http://stackoverflow.com/questions/3007120/grouped-bar-graph
-> A = read.table("project/future_quarter_prediction_by_quarter.txt")
-> data <- tapply(A$V2,A$V1,sum)
-> barplot(data)
-> barplot(data)
+#graph future quarter prediction by quarter
+A = read.table("future_quarter_prediction_by_quarter.txt")
+B = read.table("future_quarter_prediction_by_quarter_cont.txt")
+barplot(rbind(A$V2,B$V2),beside=T,names.arg=c("Q1","Q2","Q3","Q4","Pure Data","Q1D=.5"),xlab="Quarter",main="Future Quarter Prediction by Quarter",border="black",ylab="K=10 Fold Cross Validated Prediction Accuracy",col=rainbow(2))
+abline(h=0.5)
+legend("topleft",c("binary movements","continuous movements"),fill=rainbow(2))
