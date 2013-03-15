@@ -25,6 +25,7 @@ next_d_price = nil
 crnt_d_price = nil
 crnt_data_line = nil
 
+lagging_price = nil
 lagging_data_line = nil
 
 csv_file = ARGV[0]
@@ -66,13 +67,17 @@ while(data_line = data_filehandl.gets)
         end
         next_month = crnt_month
         if(!lagging_data_line.nil?)
-            if(next_q_val.nil? && lagging_data_line.match(/^[0-9]{4}-(#{q1_start}|#{q2_start}|#{q3_start}|#{q4_start}).+$/))
+            if(lagging_data_line.match(/^[0-9]{4}-(#{q1_start}|#{q2_start}|#{q3_start}|#{q4_start}).+$/))
+                lagging_data_line.match(/^[0-9]{4}-[0-9]{2}-[0-9]{2},.+,.+,.+,.+,.+,(.+)$/)
+                lagging_price = Float($1)
+            end 
+            if(next_q_val.nil? && lagging_data_line.match(/^[0-9]{4}-(#{q1_finsh}|#{q2_finsh}|#{q3_finsh}|#{q4_finsh}).+$/))
                 lagging_data_line.match(/^[0-9]{4}-[0-9]{2}-[0-9]{2},.+,.+,.+,.+,.+,(.+)$/)
                 next_q_val = Float($1)
             elsif(next_q_mov.nil? && lagging_data_line.match(/^[0-9]{4}-(#{q1_finsh}|#{q2_finsh}|#{q3_finsh}|#{q4_finsh}).+$/))
                 lagging_data_line.match(/^[0-9]{4}-[0-9]{2}-[0-9]{2},.+,.+,.+,.+,.+,(.+)$/)
                 crnt_q_val = Float($1)
-                next_q_mov = ((next_q_val - crnt_q_val) / next_q_val) * 100.0
+                next_q_mov = ((lagging_price - crnt_q_val) / lagging_price) * 100.0
                 crnt_data_line = ["#{next_q_mov}"]
                 next_d_price = crnt_q_val
                 next_q_val = crnt_q_val
